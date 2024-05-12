@@ -2,7 +2,85 @@ var connection=new WebSocket("ws://localhost:8000")
 connection.onopen =function(){
     console.log("Connected to the server!");
 }
+var recordButton =document.querySelector("#start-recording");
+var downloadVideo =document.querySelector("#download-video");
 
+recordButton.addEventListener("click",function(){
+
+    if(recordButton.textContent=='Start Recording'){
+        startRecording();
+    }
+    else{
+        stopRecording();
+        recordButton.textContent='Start Recording';
+        downloadVideo.disabled = false;
+    }
+})
+
+downloadVideo.addEventListener("click",()=>{
+
+    const blob= new Blob(recordedBlobs,{
+        type:"video/webm"
+    });
+
+    const url=window.URL.createObjectURL(blob);
+    const a= document.createElement('a');
+    a.style.display='none'; 
+    a.href=url;
+    a.download= 'webrtc_recorded.webm';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url)
+    },100);
+
+});
+function handleDataAvailable(event){
+    if( event.data && event.data.size>0){
+        recordedBlobs.push(event.data);
+    }
+}
+function startRecording()
+{
+    recordedBlobs =[];
+    let options ={
+        mimeType:'video/webm;codecs=vp9,opus'
+    }
+
+    if(!MediaRecorder.isTypeSupported(options.mimeType)){
+        console.error('${options.mimeType} is not supported');
+        options = {
+            mimeType:'video/webm;codecs=vp8,opus'
+        }
+        if(!MediaRecorder.isTypeSupported(options.mimeType)){
+            console.error('${options.mimeType} is not supported');
+            options = {
+                mimeType:'video/webm'
+            }
+            if(!MediaRecorder.isTypeSupported(options.mimeType)){
+                console.error('${options.mimeType} is not supported');
+                options = {
+                    mimeType:''
+                }
+            }
+        }
+    }
+    try{
+        mediaRecorder=new MediaRecorder(window.stream,options);
+    }
+    catch (error){
+        console.error("Media recorder error:",error);
+    }
+    mediaRecorder.start();
+    recordButton.textContent='Stop Recording';
+        downloadVideo.disabled = true;
+        mediaRecorder.ondataavailable=handleDataAvailable;
+}
+function stopRecording()
+{
+    mediaRecorder.stop();
+}
 connection.onmessage=function(msg){
     var data=JSON.parse(msg.data)
 
@@ -18,14 +96,15 @@ connection.onmessage=function(msg){
             break;
 
             case "offer":
-            call_btn.setAttribute("disabled","disabled");
             
+            call_btn.setAttribute("disabled","disabled");             
             call_status.innerHTML='<div class="calling-status-wrap card black white-text"> <div class="user-image"> <img src="'+data.image+'" class="caller-image circle" alt=""> </div> <div class="user-name">'+data.name+'</div> <div class="user-calling-status">Calling...</div> <div class="calling-action"> <div class="call-accept"><i class="material-icons green darken-2 white-text audio-icon">call</i></div> <div class="call-reject"><i class="material-icons red darken-3 white-text close-icon">close</i></div> </div> </div>';
         
             var call_accept=document.querySelector('.call-accept');
             var call_reject=document.querySelector('.call-reject');
 
             call_accept.addEventListener("click",function(){
+                recordButton.disabled=false;
                 offerProcess(data.offer,data.name);
                 call_status.innerHTML='<div class="call-status-wrap white-text"> <div class="calling-wrap"> <div class="calling-hang-action"> <div class="videocam-on"> <i class=material-icons teal darken-2 white-text video-toggle">videocam</i> </div> <div class="audio-on"> <i class="material-icons teal darken-2 white-text audio-toggle">mic</i> </div> <div class="call-cancel"> <i class="call-cancel-icon material-icons red darker-3 white-text">call</i> </div> </div> </div> </div>';
                 acceptCall(data.name);
@@ -349,6 +428,7 @@ function offerProcess(offer,name)
 
    function acceptProcess(){
     call_status.innerHTML='';
+    recordButton.disabled=false;
    }
 
    function hangUp(){
