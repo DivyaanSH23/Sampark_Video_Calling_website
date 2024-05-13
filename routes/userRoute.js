@@ -22,13 +22,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Route for the landing page
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'landing.html'));
 });
 
-router.get('/login', auth.isLogout, userController.loadLogin); // Updated route
-router.post('/login', auth.isLogout, userController.login); // Updated route
+router.get('/login', auth.isLogout, userController.loadLogin); 
+router.post('/login', auth.isLogout, userController.login); 
 router.get('/register', auth.isLogout, userController.loadRegister);
 router.post('/register', upload.single('image'), auth.isLogout, userController.register);
 router.get('/home', auth.isLogin, userController.loadHome);

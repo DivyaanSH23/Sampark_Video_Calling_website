@@ -28,8 +28,6 @@ app.use(express.static('public'));
 const userRoute = require('./routes/userRoute');
 app.use('/',userRoute);
 
-// websocket code
-
 var websocketServ = require('ws').Server;
 
 var wss= new websocketServ({
