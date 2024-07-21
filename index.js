@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); //port 5000
 
 const express = require('express');
 const app = express();
@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 app.listen(5000, ()=>{
     console.log('Server is running');
 });
+
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
